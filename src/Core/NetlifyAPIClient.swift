@@ -55,7 +55,7 @@ public final class NetlifyAPIClient: @unchecked Sendable {
     public init(
         token: String,
         baseURL: URL = URL(string: "https://api.netlify.com/api/v1")!,
-        userAgent: String = "NetlifyPortfolioSentinel/0.1.0 (macOS menu bar)",
+        userAgent: String = "NetlifyPortfolioSentinel/0.2.0 (macOS menu bar)",
         transport: HTTPTransport = URLSessionTransport()
     ) throws {
         let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -25,7 +25,7 @@ export NETLIFY_ACCOUNT_SLUG=baofang1990
 Release package:
 
 ```bash
-./script/package_release.sh 0.1.0
+./script/package_release.sh 0.2.0
 ```
 
 The distributable ZIP appears under `release/`.

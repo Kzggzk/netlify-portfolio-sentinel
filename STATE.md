@@ -54,7 +54,7 @@ Netlify Portfolio Sentinel is a macOS menu bar app for Fangbao's Netlify portfol
 - Passed `swift run sentinelctl demo` and `./script/smoke_api.sh` offline smoke.
 - Created GitHub repository `https://github.com/Kzggzk/netlify-portfolio-sentinel`.
 - Pushed `main`, `dev`, `codex/feature-initial-sentinel`, and tag `v0.1.0`.
-- Verified remote commit through GitHub: `https://github.com/Kzggzk/netlify-portfolio-sentinel/commit/2175b6fa20696cad7519f0c1e954301e63534675`.
+- Verified remote commit through GitHub: `https://github.com/Kzggzk/netlify-portfolio-sentinel/commit/4a6b697bbd08cbd52839f8243be24b00ba98e395`.
 
 ## Next
 

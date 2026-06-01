@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import os
 
 public final class KeychainTokenStore: @unchecked Sendable {
     public static let shared = KeychainTokenStore()
@@ -9,6 +10,9 @@ public final class KeychainTokenStore: @unchecked Sendable {
 
     public init() {}
 
+    /// Reads and decrypts the stored token. May trigger a system Keychain prompt
+    /// if the calling binary's signature differs from the one that saved it
+    /// (e.g. after an unsigned rebuild), which is logged distinctly from "absent".
     public func readToken() -> String? {
         var query = baseQuery()
         query[kSecReturnData as String] = true
@@ -16,8 +20,25 @@ public final class KeychainTokenStore: @unchecked Sendable {
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
+        guard status == errSecSuccess, let data = result as? Data else {
+            if status == errSecItemNotFound {
+                SentinelLog.keychain.info("No stored token (item not found).")
+            } else {
+                SentinelLog.keychain.error("Token read failed: \(Self.describe(status), privacy: .public)")
+            }
+            return nil
+        }
         return String(data: data, encoding: .utf8)
+    }
+
+    /// Cheap, metadata-only presence check. Does not decrypt the secret, so it
+    /// will not raise a Keychain prompt — safe to call from SwiftUI render paths
+    /// where `readToken()` would be both expensive and prompt-spamming.
+    public func tokenExists() -> Bool {
+        var query = baseQuery()
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        let status = SecItemCopyMatching(query as CFDictionary, nil)
+        return status == errSecSuccess
     }
 
     public func saveToken(_ token: String) throws {
@@ -52,6 +73,12 @@ public final class KeychainTokenStore: @unchecked Sendable {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
+    }
+
+    /// Human-readable description for an `OSStatus`, e.g. "errSecInteractionNotAllowed".
+    static func describe(_ status: OSStatus) -> String {
+        let message = SecCopyErrorMessageString(status, nil) as String? ?? "unknown"
+        return "OSStatus \(status): \(message)"
     }
 }
 

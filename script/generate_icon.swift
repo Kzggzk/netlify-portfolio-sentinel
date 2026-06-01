@@ -19,53 +19,77 @@ let sizes: [(String, Int)] = [
     ("icon_512x512@2x.png", 1024)
 ]
 
+// Redesigned icon: a smaller, cleaner macOS-style squircle (10% canvas margin so
+// the tile reads "smaller" and well-padded) with a single brand monogram and one
+// subtle uptrend accent. No busy chart/dots/text stack like the first version.
 func drawIcon(size: Int) -> NSImage {
+    let s = CGFloat(size)
     let image = NSImage(size: NSSize(width: size, height: size))
     image.lockFocus()
-    let rect = NSRect(x: 0, y: 0, width: size, height: size)
+    defer { image.unlockFocus() }
 
+    // 10% margin all around -> squircle covers ~80% of the canvas (smaller tile).
+    let margin = s * 0.10
+    let tile = NSRect(x: margin, y: margin, width: s - 2 * margin, height: s - 2 * margin)
+    let radius = tile.width * 0.2237 // modern macOS superellipse-ish corner
+
+    NSGraphicsContext.saveGraphicsState()
+    let clip = NSBezierPath(roundedRect: tile, xRadius: radius, yRadius: radius)
+    clip.addClip()
+
+    // Brand gradient: teal (top) -> deep navy (bottom).
     let bg = NSGradient(colors: [
-        NSColor(calibratedRed: 0.02, green: 0.62, blue: 0.56, alpha: 1),
-        NSColor(calibratedRed: 0.08, green: 0.20, blue: 0.42, alpha: 1)
+        NSColor(calibratedRed: 0.05, green: 0.67, blue: 0.61, alpha: 1.0),
+        NSColor(calibratedRed: 0.05, green: 0.17, blue: 0.39, alpha: 1.0)
     ])!
-    let path = NSBezierPath(roundedRect: rect.insetBy(dx: CGFloat(size) * 0.08, dy: CGFloat(size) * 0.08), xRadius: CGFloat(size) * 0.20, yRadius: CGFloat(size) * 0.20)
-    bg.draw(in: path, angle: 135)
+    bg.draw(in: tile, angle: -90)
 
-    NSColor.white.withAlphaComponent(0.92).setStroke()
-    let line = NSBezierPath()
-    line.lineWidth = max(3, CGFloat(size) * 0.045)
-    line.lineCapStyle = .round
-    line.lineJoinStyle = .round
-    line.move(to: NSPoint(x: CGFloat(size) * 0.22, y: CGFloat(size) * 0.35))
-    line.line(to: NSPoint(x: CGFloat(size) * 0.40, y: CGFloat(size) * 0.49))
-    line.line(to: NSPoint(x: CGFloat(size) * 0.55, y: CGFloat(size) * 0.43))
-    line.line(to: NSPoint(x: CGFloat(size) * 0.78, y: CGFloat(size) * 0.70))
-    line.stroke()
+    // Soft top sheen for depth.
+    let sheen = NSGradient(colors: [
+        NSColor.white.withAlphaComponent(0.16),
+        NSColor.white.withAlphaComponent(0.0)
+    ])!
+    sheen.draw(in: NSRect(x: tile.minX, y: tile.midY, width: tile.width, height: tile.height / 2), angle: -90)
 
-    NSColor(calibratedRed: 0.91, green: 0.98, blue: 0.52, alpha: 1).setFill()
-    for point in [
-        NSPoint(x: CGFloat(size) * 0.22, y: CGFloat(size) * 0.35),
-        NSPoint(x: CGFloat(size) * 0.40, y: CGFloat(size) * 0.49),
-        NSPoint(x: CGFloat(size) * 0.55, y: CGFloat(size) * 0.43),
-        NSPoint(x: CGFloat(size) * 0.78, y: CGFloat(size) * 0.70)
-    ] {
-        let dotSize = CGFloat(size) * 0.075
-        NSBezierPath(ovalIn: NSRect(x: point.x - dotSize / 2, y: point.y - dotSize / 2, width: dotSize, height: dotSize)).fill()
-    }
+    // Subtle uptrend accent: a small rising sparkline low in the tile.
+    let lime = NSColor(calibratedRed: 0.83, green: 0.98, blue: 0.45, alpha: 1.0)
+    let spark = NSBezierPath()
+    spark.lineWidth = max(2, tile.width * 0.05)
+    spark.lineCapStyle = .round
+    spark.lineJoinStyle = .round
+    let yBase = tile.minY + tile.height * 0.24
+    spark.move(to: NSPoint(x: tile.midX - tile.width * 0.20, y: yBase))
+    spark.line(to: NSPoint(x: tile.midX - tile.width * 0.06, y: yBase + tile.height * 0.07))
+    spark.line(to: NSPoint(x: tile.midX + tile.width * 0.06, y: yBase + tile.height * 0.02))
+    spark.line(to: NSPoint(x: tile.midX + tile.width * 0.20, y: yBase + tile.height * 0.13))
+    lime.withAlphaComponent(0.95).setStroke()
+    spark.stroke()
+    // Endpoint dot.
+    let dot = tile.width * 0.06
+    lime.setFill()
+    NSBezierPath(ovalIn: NSRect(
+        x: tile.midX + tile.width * 0.20 - dot / 2,
+        y: yBase + tile.height * 0.13 - dot / 2,
+        width: dot, height: dot
+    )).fill()
 
+    // Centered monogram, well padded above the sparkline.
     let letters = "NF" as NSString
-    let font = NSFont.systemFont(ofSize: CGFloat(size) * 0.23, weight: .black)
+    let para = NSMutableParagraphStyle()
+    para.alignment = .center
+    let font = NSFont.systemFont(ofSize: tile.width * 0.38, weight: .heavy)
     let attrs: [NSAttributedString.Key: Any] = [
         .font: font,
-        .foregroundColor: NSColor.white.withAlphaComponent(0.92)
+        .foregroundColor: NSColor.white.withAlphaComponent(0.97),
+        .paragraphStyle: para
     ]
     let textSize = letters.size(withAttributes: attrs)
-    letters.draw(
-        at: NSPoint(x: (CGFloat(size) - textSize.width) / 2, y: CGFloat(size) * 0.17),
-        withAttributes: attrs
-    )
+    letters.draw(at: NSPoint(
+        x: tile.midX - textSize.width / 2,
+        y: tile.midY - textSize.height / 2 + tile.height * 0.08
+    ), withAttributes: attrs)
 
-    image.unlockFocus()
+    NSGraphicsContext.restoreGraphicsState()
     return image
 }
 

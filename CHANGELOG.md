@@ -15,6 +15,9 @@
   from SwiftUI render paths. Refresh now distinguishes "no token" from
   "token stored but unreadable by this build".
 - Verified live against the real Netlify account: 141 sites fetched.
+- Redesigned the app icon: a smaller, well-padded macOS-style squircle with a
+  clean "NF" monogram and a subtle uptrend accent (replaces the busier v0.1.0
+  chart/dots/text stack).
 
 ## 0.1.0 - 2026-06-02
 

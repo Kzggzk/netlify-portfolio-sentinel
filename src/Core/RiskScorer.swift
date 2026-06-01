@@ -23,8 +23,25 @@ public enum RiskScorer {
         site: NetlifySite,
         deploys: [NetlifyDeploy],
         settings: MonitorSettings,
-        currentDeployFootprintBytes: Int64?
+        currentDeployFootprintBytes: Int64?,
+        deployDataAvailable: Bool = true
     ) -> SiteDigest {
+        // A failed deploy fetch must never read as "safe". Surface it as an
+        // explicit unknown so a cost-risky site can't hide behind a fetch error.
+        guard deployDataAvailable else {
+            return SiteDigest(
+                site: site,
+                deploys: [],
+                deploysInLookback: 0,
+                failedDeploysInLookback: 0,
+                lastDeployAt: site.updatedAt,
+                lastDeployState: nil,
+                currentDeployFootprintBytes: currentDeployFootprintBytes,
+                riskLevel: .watch,
+                riskReasons: ["Deploy history unavailable (fetch failed) — risk unknown, retry to confirm."]
+            )
+        }
+
         let cutoff = Calendar.current.date(
             byAdding: .day,
             value: -settings.deployLookbackDays,

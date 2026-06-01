@@ -100,6 +100,9 @@ struct SentinelCLI {
         print("Deploys in window: \(snapshot.totalDeploysInLookback)")
         print("Failed deploys: \(snapshot.failedDeploysInLookback)")
         print("Highest risk: \(snapshot.highestRisk.rawValue)")
+        if snapshot.unavailableSiteCount > 0 {
+            print("Unreadable sites (risk unknown): \(snapshot.unavailableSiteCount)")
+        }
         if let remaining = snapshot.apiRateLimitRemaining {
             print("API rate remaining: \(remaining)")
         }

@@ -224,6 +224,9 @@ public struct MonitorSettings: Codable, Equatable, Sendable {
     public var warningUsageRatio: Double
     public var criticalUsageRatio: Double
     public var refreshIntervalMinutes: Int
+    /// Upper bound on simultaneous Netlify requests during a snapshot fan-out.
+    /// Keeps the portfolio scan fast without tripping the API rate limit.
+    public var maxConcurrentRequests: Int
 
     public init(
         accountSlug: String? = nil,
@@ -233,7 +236,8 @@ public struct MonitorSettings: Codable, Equatable, Sendable {
         fileFootprintSiteLimit: Int = 12,
         warningUsageRatio: Double = 0.70,
         criticalUsageRatio: Double = 0.90,
-        refreshIntervalMinutes: Int = 15
+        refreshIntervalMinutes: Int = 15,
+        maxConcurrentRequests: Int = 6
     ) {
         self.accountSlug = accountSlug
         self.deployLookbackDays = deployLookbackDays
@@ -243,6 +247,7 @@ public struct MonitorSettings: Codable, Equatable, Sendable {
         self.warningUsageRatio = warningUsageRatio
         self.criticalUsageRatio = criticalUsageRatio
         self.refreshIntervalMinutes = refreshIntervalMinutes
+        self.maxConcurrentRequests = maxConcurrentRequests
     }
 }
 
@@ -256,6 +261,10 @@ public struct NetlifySnapshot: Codable, Equatable, Sendable {
     public let failedDeploysInLookback: Int
     public let degradedReason: String?
     public let apiRateLimitRemaining: Int?
+    /// Count of scanned sites whose deploy history could not be fetched this run.
+    /// Optional so snapshots written before this field still decode cleanly.
+    /// A non-nil, non-zero value means some risk readings are "unknown", not "safe".
+    public let deployFetchFailures: Int?
 
     public init(
         generatedAt: String,
@@ -266,7 +275,8 @@ public struct NetlifySnapshot: Codable, Equatable, Sendable {
         totalDeploysInLookback: Int,
         failedDeploysInLookback: Int,
         degradedReason: String?,
-        apiRateLimitRemaining: Int?
+        apiRateLimitRemaining: Int?,
+        deployFetchFailures: Int? = nil
     ) {
         self.generatedAt = generatedAt
         self.account = account
@@ -277,9 +287,16 @@ public struct NetlifySnapshot: Codable, Equatable, Sendable {
         self.failedDeploysInLookback = failedDeploysInLookback
         self.degradedReason = degradedReason
         self.apiRateLimitRemaining = apiRateLimitRemaining
+        self.deployFetchFailures = deployFetchFailures
     }
 
     public var highestRisk: RiskLevel {
         sites.map(\.riskLevel).max() ?? .low
+    }
+
+    /// Number of scanned sites with unavailable deploy data, defaulting to 0
+    /// for snapshots persisted before the field existed.
+    public var unavailableSiteCount: Int {
+        deployFetchFailures ?? 0
     }
 }

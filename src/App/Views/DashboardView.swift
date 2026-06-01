@@ -94,6 +94,15 @@ struct DashboardView: View {
                 }
             }
 
+            if snapshot.unavailableSiteCount > 0 {
+                Label(
+                    "\(snapshot.unavailableSiteCount) site(s) couldn't return deploy data — risk unknown, refresh to retry.",
+                    systemImage: "wifi.exclamationmark"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+            }
+
             if let degradedReason = snapshot.degradedReason {
                 Label(degradedReason, systemImage: "exclamationmark.triangle")
                     .font(.caption)

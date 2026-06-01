@@ -43,9 +43,9 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>0.2.0</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>2</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>LSUIElement</key>
@@ -56,12 +56,20 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
+# iCloud Drive tags files with extended attributes that invalidate a code
+# signature, and swapping in a freshly built binary breaks the bundle seal.
+# Strip the detritus and ad-hoc re-sign so launchd will actually spawn the app
+# (otherwise: RBSRequestErrorDomain Code=5 / POSIX 162 "Launchd job spawn failed").
+/usr/bin/xattr -cr "$BUNDLE" >/dev/null 2>&1 || true
+/usr/bin/codesign --force --sign - "$BUNDLE/Contents/MacOS/$PRODUCT" >/dev/null 2>&1 || true
+/usr/bin/codesign --force --sign - "$BUNDLE" >/dev/null 2>&1 || true
+
 if [[ "${1:-}" == "--no-launch" ]]; then
   echo "$BUNDLE"
   exit 0
 fi
 
-/usr/bin/open -n "$BUNDLE"
+/usr/bin/open "$BUNDLE"
 
 if [[ "${1:-}" == "--verify" ]]; then
   sleep 2

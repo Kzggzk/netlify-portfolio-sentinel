@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Netlify Portfolio Sentinel"
 PRODUCT="NetlifyPortfolioSentinel"
-VERSION="${1:-0.1.0}"
+VERSION="${1:-0.2.0}"
 BUNDLE="$ROOT/release/${APP_NAME}.app"
 ZIP="$ROOT/release/netlify-portfolio-sentinel-${VERSION}-macos.zip"
 ICON="$ROOT/assets/AppIcon.icns"
@@ -39,7 +39,7 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
   <key>CFBundleShortVersionString</key>
   <string>${VERSION}</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>2</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>LSUIElement</key>
@@ -49,6 +49,14 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+# Strip iCloud/Finder detritus and ad-hoc sign so the unzipped app passes the
+# code-signature check and can be launched (right-click → Open on first run,
+# since the build is unsigned by a Developer ID).
+xattr -cr "$BUNDLE" >/dev/null 2>&1 || true
+codesign --force --sign - "$BUNDLE/Contents/MacOS/$PRODUCT" >/dev/null 2>&1 || true
+codesign --force --sign - "$BUNDLE" >/dev/null 2>&1 || true
+codesign --verify --verbose "$BUNDLE" 2>&1 | tail -1 || true
 
 rm -f "$ZIP"
 ditto -c -k --keepParent "$BUNDLE" "$ZIP"

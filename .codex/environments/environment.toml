@@ -1,0 +1,7 @@
+[[actions]]
+name = "Run"
+command = "./script/build_and_run.sh"
+
+[[actions]]
+name = "Verify"
+command = "./script/build_and_run.sh --verify"

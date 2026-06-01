@@ -1,0 +1,16 @@
+.build/
+.swiftpm/
+.DS_Store
+dist/
+release/
+DerivedData/
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj
+.env
+.env.*
+!.env.example
+*.log
+*.zip
+assets/AppIcon.iconset/
+NetlifyPortfolioSentinel.dSYM/
